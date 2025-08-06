@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Edit Blog Post</h2>
+    {% if not user or not post %}
+    <div class="alert alert-warning">You do not have permission to edit this post.</div>
+    {% else %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="title" class="form-label">Title</label>
+            <input type="text" class="form-control" id="title" name="title" value="{{ post.title }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="content" class="form-label">Content</label>
+            <textarea class="form-control" id="content" name="content" rows="8" required>{{ post.content }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="status" class="form-label">Status</label>
+            <select class="form-select" id="status" name="status">
+                <option value="draft" {% if post.status == 'draft' %}selected{% endif %}>Draft</option>
+                <option value="published" {% if post.status == 'published' %}selected{% endif %}>Published</option>
+            </select>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+            <a href="{% url 'blog:post_detail' post.id %}" class="btn btn-secondary">Back</a>
+            
+            <button type="submit" class="btn btn-success">Update Post</button>
+            
+            {% if user and post and user.username == post.author.username %}
+            <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" name="delete" value="1" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this post?');">Delete Post</button>
+            </form>
+            {% endif %}
+        </div>
+    </form>
+    {% if message %}
+    <div class="alert alert-info mt-3">{{ message }}</div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

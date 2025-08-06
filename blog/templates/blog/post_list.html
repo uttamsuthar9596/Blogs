@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block content %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+  <div class="container-fluid">
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        {% if user %}
+        <li class="nav-item">
+          <span class="navbar-text text-white fw-bold">{{ user.username }}</span>
+        </li>
+       
+        {% endif %}
+      </ul>
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+        {% if user %}
+         <li class="nav-item">
+          <a class="nav-link text-white" href="{% url 'blog:create_post' %}">Add Blog</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-white" href="{% url 'blog:logout' %}">Logout</a>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a class="nav-link text-white" href="{% url 'blog:login' %}">Login</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-white" href="{% url 'blog:register' %}">Register</a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+<style>
+    .blog-header {
+        background: linear-gradient(90deg, #007bff 0%, #00c6ff 100%);
+        color: #fff;
+        padding: 2rem 0 1rem 0;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .card-header {
+        border-radius: 1rem 1rem 0 0;
+    }
+    .card-body {
+        border-radius: 0 0 1rem 1rem;
+    }
+    .btn-outline-primary {
+        font-weight: 500;
+    }
+    .pagination .page-link {
+        border-radius: 0.5rem;
+        margin: 0 2px;
+    }
+</style>
+
+<div id="posts-list">
+    {% for post in posts %}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header">
+            <h4 class="mb-0">{{ post.title }}</h4>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold">By {{ post.author }}</span>
+                <span class="text-muted">{{ post.timestamp|date:"M d, Y H:i" }}</span>
+                <span class="badge bg-info">{{ post.status|title }}</span>
+            </div>
+            <div class="mb-3">{{ post.content|safe|truncatewords_html:50 }}</div>
+            <a href="{% url 'blog:post_detail' post.id %}" class="btn btn-outline-primary">Read More</a>
+        </div>
+    </div>
+    {% empty %}
+    <p>No posts available.</p>
+    {% endfor %}
+</div>
+{% if posts.has_other_pages %}
+<nav aria-label="Page navigation">
+  <ul class="pagination justify-content-center mt-4">
+    {% if posts.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ posts.previous_page_number }}">Previous</a></li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Previous</span></li>
+    {% endif %}
+    {% for num in posts.paginator.page_range %}
+      {% if posts.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+      {% else %}
+        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if posts.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ posts.next_page_number }}">Next</a></li>
+    {% else %}
+      <li class="page-item disabled"><span class="page-link">Next</span></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+<script>
+let page = parseInt("{{ posts.number|default:1 }}") || 1;
+document.getElementById('load-more').onclick = function() {
+    page++;
+    fetch(`/api/posts/?page=${page}`)
+        .then(response => response.json())
+        .then(data => {
+            data.results.forEach(post => {
+                const postDiv = document.createElement('div');
+                postDiv.className = 'card mb-4 shadow-sm';
+                postDiv.innerHTML = `<div class=\"card-header bg-primary text-white\"><h4 class=\"mb-0\">${post.title}</h4></div><div class=\"card-body\"><div class=\"d-flex justify-content-between align-items-center mb-2\"><span class=\"fw-bold\">By ${post.author}</span><span class=\"text-muted\">${new Date(post.timestamp).toLocaleString()}</span><span class=\"badge bg-info\">${post.status.charAt(0).toUpperCase() + post.status.slice(1)}</span></div><div class=\"mb-3\">${post.content.substring(0, 200)}...</div><a href=\"/posts/${post.id}/\" class=\"btn btn-outline-primary\">Read More</a></div>`;
+                document.getElementById('posts-list').appendChild(postDiv);
+            });
+            if (!data.next) {
+                document.getElementById('load-more').style.display = 'none';
+            }
+        });
+};
+</script>
+{% endblock %}
